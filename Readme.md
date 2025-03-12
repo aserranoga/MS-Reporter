@@ -16,7 +16,7 @@ Features:
 - Allows to choose between reporting a fixed number of decimal places or a fixed number of significant figures
 - Optionally compares the calculated m/z values with experimental data, reporting the best match 
   and the ppm error for each protonation state (and for [M]).
-- Reports all values in plain ASCII text.
+- Reports all values in plain ASCII text and in Markdown format.
 
 Configuration:
 --------------
@@ -108,6 +108,8 @@ Comparison: [M+7H]7+ calc 2204.9000, exp 2204.9000 (0.0 ppm), [M+8H]8+ calc 1929
 
 Notes:
  - For [M+9H]9+: For calc m/z 1715.1000, the best match (1715.1000) is off by 25.3 ppm (> 20 ppm).
+
+ Do you want to also print the output in Markdown format? (y/n): n
 ```
 
 Note: The experimental comparison output always uses 4 decimals.

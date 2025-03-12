@@ -216,6 +216,23 @@ def format_value(num, mode, precision):
     else:
         return f"{num:.{precision}f}"
 
+# Helper functions for Markdown formatting:
+def md_format_formula(formula_str):
+    """
+    Convert a molecular formula (e.g., "C675H1098N198O203S6") into Markdown format
+    with subscript tags for numbers.
+    Example: "C675H1098N198O203S6" -> "C<sub>675</sub>H<sub>1098</sub>N<sub>198</sub>O<sub>203</sub>S<sub>6</sub>"
+    """
+    return re.sub(r'([A-Za-z])(\d+)', r'\1<sub>\2</sub>', formula_str)
+
+def md_format_protonation(ch, mz_value, output_mode, precision):
+    """
+    Format a protonation state for Markdown.
+    Returns a string like:
+      "[M+7H]<sup>7+</sup> " + formatted_mz
+    """
+    return f"[M+{ch}H]<sup>{ch}+</sup> " + format_value(mz_value, output_mode, precision)
+
 # -----------------------------------------------------------------------------------
 # 6) MAIN CODE
 # -----------------------------------------------------------------------------------
@@ -354,6 +371,24 @@ def main():
                 print(" - " + note)
     else:
         print("\nNo experimental comparison requested.")
+
+    # Ask if user wants to print the same output in Markdown format.
+    md_choice = input("\nDo you want to also print the output in Markdown format? (y/n): ").strip().lower()
+    if md_choice and md_choice.startswith("y"):
+        # Build Markdown formatted molecular formula.
+        md_formula_str = md_format_formula(formula_str)
+        # Build Markdown formatted calculated report parts.
+        md_calc_report_parts = []
+        for ch in charge_list:
+            md_calc_report_parts.append(md_format_protonation(ch, calc_states[ch], output_mode, precision))
+        md_calc_report_parts.append("[M] " + format_value(most_abundant_mass, output_mode, precision))
+        # Build full Markdown report line: include a comma before "found m/z" on the same line.
+        md_report_line = "*m/z* **calcd** for " + md_formula_str + " " + ", ".join(md_calc_report_parts) \
+                         + ", **found** m/z " + ", ".join(found_report_parts)
+        print("\nMarkdown Report:")
+        print(md_report_line)
+    else:
+        print("\nMarkdown output not requested.")
 
 if __name__ == "__main__":
     main()
