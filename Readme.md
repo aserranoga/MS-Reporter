@@ -13,6 +13,7 @@ Features:
 - Calculates theoretical m/z values for the intact molecule ([M]) and for a range of protonation 
   states (e.g., [M+H]+, [M+2H]2+, etc.).
 - Reads configuration settings from a config.ini file.
+- Allows to choose between reporting a fixed number of decimal places or a fixed number of significant figures
 - Optionally compares the calculated m/z values with experimental data, reporting the best match 
   and the ppm error for each protonation state (and for [M]).
 - Reports all values in plain ASCII text.
@@ -26,12 +27,17 @@ Below is an example of the config.ini file:
 [DEFAULT]
 formula = C675H1098N198O203S6
 preview_charge_range = 5-30
-decimals = 4
+output_mode = sigfigs
+precision = 7
 ```
 
-- "formula"      : The molecular formula (e.g., C675H1098N198O203S6).
+- "formula"             : The molecular formula (e.g., C675H1098N198O203S6).
 - "preview_charge_range": The default range of protonation states to preview, in the format start-end (e.g., 5-30).
-- "decimals"     : The number of decimal places for the calculated m/z values (except for the comparison, which always uses 4 decimals).
+- "output_mode"         : Specifies the output formatting mode for the calculated m/z values.
+                          Use "decimals" to display a fixed number of decimals, or "sigfigs" to display a fixed number of significant figures.
+- "precision"           : If output_mode is "decimals", this is the number of decimal places.
+                          If output_mode is "sigfigs", this is the number of significant figures.
+
 
 Usage:
 ------
@@ -96,12 +102,15 @@ Please paste the experimental peak list below (end input with an empty line):
 4   1543.7  23000   12.5    28.0    0.0
 5   15427.0 22000   20.0    50.0    0.0
 
-found m/z 2204.9000, 1929.4000, 1715.1000, 1543.7000, 15427.0000
+m/z calcd for C675H1098N198O203S6 [M+7H]7+ 2204.9000, [M+8H]8+ 1929.4000, [M+9H]9+ 1715.1000, [M+10H]10+ 1543.7000, [M] 15427.0000, found m/z 2204.9000, 1929.4000, 1715.1000, 1543.7000, 15427.0000
+
 Comparison: [M+7H]7+ calc 2204.9000, exp 2204.9000 (0.0 ppm), [M+8H]8+ calc 1929.4000, exp 1929.4000 (0.0 ppm), [M+9H]9+ calc 1715.1000, exp 1715.1000 (0.0 ppm), [M+10H]10+ calc 1543.7000, exp 1543.7000 (0.0 ppm), [M] calc 15427.0000, exp 15427.0000 (0.0 ppm)
 
 Notes:
  - For [M+9H]9+: For calc m/z 1715.1000, the best match (1715.1000) is off by 25.3 ppm (> 20 ppm).
 ```
+
+Note: The experimental comparison output always uses 4 decimals.
 
 Troubleshooting:
 ----------------

@@ -13,10 +13,11 @@ def read_config():
     config_path = os.path.join(os.path.dirname(__file__), "config.ini")
     config.read(config_path)
     # Use fallback values if not defined in config.ini
-    formula_str = config.get("DEFAULT", "formula", fallback="C383H619N121O110S3")
+    formula_str = config.get("DEFAULT", "formula")
     charge_range_default = config.get("DEFAULT", "preview_charge_range", fallback="1-30")
-    decimals = config.getint("DEFAULT", "decimals", fallback=4)
-    return formula_str, charge_range_default, decimals
+    output_mode = config.get("DEFAULT", "output_mode", fallback="decimals") # "decimals" or "sigfigs"
+    precision = config.getint("DEFAULT", "precision", fallback=4)
+    return formula_str, charge_range_default, output_mode, precision
 
 # -----------------------------------------------------------------------------------
 # 2) ISOTOPIC DATA (from NIST https://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl)
@@ -155,11 +156,13 @@ def parse_experimental_peaks(input_text):
             continue
     return peaks
 
-def find_best_match(calc_mz, exp_peaks, decimals, ppm_accept=100, ppm_warn=20, ppm_search=1000):
+def find_best_match(calc_mz, exp_peaks, output_mode, precision, ppm_accept=100, ppm_warn=20, ppm_search=1000):
     """
     For a given calculated m/z, find the best matching experimental peak.
     
     Returns: (selected_peak, list_of_notes)
+    The calculated m/z is formatted using format_value().
+    Experimental values in the notes are forced to 4 decimals.
     """
     notes = []
     candidates = []
@@ -173,28 +176,58 @@ def find_best_match(calc_mz, exp_peaks, decimals, ppm_accept=100, ppm_warn=20, p
     # Filter candidates within the acceptance threshold (ppm_accept)
     candidates_accept = [(peak, ppm_diff) for (peak, ppm_diff) in candidates if ppm_diff <= ppm_accept]
     if not candidates_accept:
-        notes.append(f"No experimental peak found within {ppm_accept} ppm for calculated m/z {calc_mz:.{decimals}f}.")
+        notes.append(f"No experimental peak found within {ppm_accept} ppm for calculated m/z {format_value(calc_mz, output_mode, precision)}.")
         return None, notes
     # Select candidate by minimal ppm difference
     candidate_by_diff, diff_ppm = min(candidates_accept, key=lambda x: x[1])
     if diff_ppm > ppm_warn:
-        notes.append(f"For calc m/z {calc_mz:.{decimals}f}, the best match ({candidate_by_diff['mz']:.{decimals}f}) is off by {diff_ppm:.1f} ppm (> {ppm_warn} ppm).")
+        notes.append(f"For calc m/z {format_value(calc_mz, output_mode, precision)}, the best match ({format_value(candidate_by_diff['mz'], output_mode, precision)}) is off by {diff_ppm:.1f} ppm (> {ppm_warn} ppm).")
     candidate_by_intensity, _ = max(candidates, key=lambda x: x[0]["I"])
     if abs(candidate_by_diff["mz"] - candidate_by_intensity["mz"]) > 1e-4:
-        notes.append(f"Note: within 1000 ppm, the peak with highest I% is {candidate_by_intensity['mz']:.{decimals}f} (I%={candidate_by_intensity['I']}) which differs from the closest match {candidate_by_diff['mz']:.{decimals}f}.")
+        notes.append(f"Note: within 1000 ppm, the peak with highest I% is {candidate_by_intensity['mz']:.4f} (I%={candidate_by_intensity['I']}) which differs from the closest match {format_value(candidate_by_diff['mz'], output_mode, precision)}.")
     return candidate_by_diff, notes
 
+
 # -----------------------------------------------------------------------------------
-# 5) MAIN CODE
+# 5) HELPER FUNCTIONS FOR FORMATTING OUTPUT
+# -----------------------------------------------------------------------------------
+def format_sigfig(num, sigfigs):
+    """
+    Format a number to the specified number of significant digits.
+    """
+    if num == 0:
+        return "0." + "0" * (sigfigs - 1)
+    order = math.floor(math.log10(abs(num)))
+    decimals_needed = sigfigs - order - 1
+    if decimals_needed < 0:
+        decimals_needed = 0
+    format_str = "{:." + str(decimals_needed) + "f}"
+    return format_str.format(num)
+
+def format_value(num, mode, precision):
+    """
+    Format a number according to the selected mode.
+    mode: "decimals" or "sigfigs"
+    If mode is "sigfigs", format the number to 'precision' significant figures.
+    Otherwise, format the number with 'precision' fixed decimals.
+    """
+    if mode.lower() == "sigfigs":
+        return format_sigfig(num, precision)
+    else:
+        return f"{num:.{precision}f}"
+
+# -----------------------------------------------------------------------------------
+# 6) MAIN CODE
 # -----------------------------------------------------------------------------------
 
 def main():
     # Read settings from config.ini
-    formula_str, default_charge_range, decimals = read_config()
+    formula_str, default_charge_range, output_mode, precision = read_config()
     
     print("Parsed formula from config.ini:", formula_str)
     print("Default protonation states range from config.ini:", default_charge_range)
-    print("Using", decimals, "decimals for the output.\n")
+    print("Output mode:", output_mode, "with precision", precision)
+    print()
     
     # Parse the formula
     formula = parse_formula(formula_str)
@@ -208,7 +241,7 @@ def main():
     
     print("\nTop 3 isotopic masses (relative intensity):")
     for i, (mass, intensity) in enumerate(norm_distribution[:3], 1):
-        print(f"{i}. Mass = {mass:.{decimals}f} Da, Relative intensity = {intensity:.2f}%")
+        print(f"{i}. Mass = {format_value(mass, output_mode, precision)} Da, Relative intensity = {intensity:.2f}%")
     
     most_abundant_mass = norm_distribution[0][0] if norm_distribution else 0.0
 
@@ -224,7 +257,7 @@ def main():
     for charge in range(default_start, default_end + 1):
         mz = (most_abundant_mass + charge * proton_mass) / charge
         calc_states[charge] = mz
-        print(f"  [M+{charge}H] {charge}+  =>  {mz:.{decimals}f} m/z")
+        print(f"  [M+{charge}H] {charge}+  =>  {format_value(mz, output_mode, precision)} m/z")
     
     # Ask the user which protonation states to report.
     user_input = input(f"\nWhich protonation states do you want to report? (e.g. 7-10, press Enter for default {default_charge_range}): ").strip()
@@ -239,6 +272,7 @@ def main():
         print("Invalid input. Use format '10-7' or '7-10'. Exiting.")
         return
 
+    # Preserve the order as entered by the user
     if start_charge <= end_charge:
         charge_list = list(range(start_charge, end_charge + 1))
     else:
@@ -247,9 +281,12 @@ def main():
     # Build final calculated report parts (plain ASCII)
     calc_report_parts = []
     for ch in charge_list:
+        # If the requested charge state is not in calc_states, compute it.
+        if ch not in calc_states:
+            calc_states[ch] = (most_abundant_mass + ch * proton_mass) / ch
         mz = calc_states[ch]
-        calc_report_parts.append(f"[M+{ch}H]{ch}+ {mz:.{decimals}f}")
-    calc_report_parts.append(f"[M] {most_abundant_mass:.{decimals}f}")
+        calc_report_parts.append(f"[M+{ch}H]{ch}+ " + format_value(mz, output_mode, precision))
+    calc_report_parts.append("[M] " + format_value(most_abundant_mass, output_mode, precision))
     
     report_line = "m/z calcd for " + formula_str + " " + ", ".join(calc_report_parts)
     print("\nReport (plain ASCII):")
@@ -274,15 +311,15 @@ def main():
         found_report_parts = []
         overall_notes = []
         comparison_parts = []
-        # For each selected protonation state, try to find the best experimental match.
+        # For each selected protonation state, find best experimental match.
         for ch in charge_list:
             calc_mz = calc_states[ch]
-            best_match, notes = find_best_match(calc_mz, exp_peaks, decimals, ppm_accept=100, ppm_warn=20, ppm_search=1000)
+            best_match, notes = find_best_match(calc_mz, exp_peaks, output_mode, precision, ppm_accept=100, ppm_warn=20, ppm_search=1000)
             if best_match is None:
                 found_report_parts.append("N/A")
                 comparison_parts.append(f"[M+{ch}H]{ch}+ calc {calc_mz:.4f}, exp N/A")
             else:
-                found_report_parts.append(f"{best_match['mz']:.{decimals}f}")
+                found_report_parts.append(format_value(best_match['mz'], output_mode, precision))
                 error = abs(calc_mz - best_match['mz']) / calc_mz * 1e6
                 # Force 4 decimals in the comparison output regardless of config value.
                 comparison_parts.append(f"[M+{ch}H]{ch}+ calc {calc_mz:.4f}, exp {best_match['mz']:.4f} ({error:.1f} ppm)")
@@ -291,12 +328,12 @@ def main():
         
         # Also process the neutral (intact mass) [M]
         neutral_calc = most_abundant_mass
-        neutral_match, neutral_notes = find_best_match(neutral_calc, exp_peaks, decimals, ppm_accept=100, ppm_warn=20, ppm_search=1000)
+        neutral_match, neutral_notes = find_best_match(neutral_calc, exp_peaks, output_mode, precision, ppm_accept=100, ppm_warn=20, ppm_search=1000)
         if neutral_match is None:
             found_neutral = "N/A"
             comp_neutral = f"[M] calc {neutral_calc:.4f}, exp N/A"
         else:
-            found_neutral = f"{neutral_match['mz']:.{decimals}f}"
+            found_neutral = format_value(neutral_match['mz'], output_mode, precision)
             neutral_error = abs(neutral_calc - neutral_match['mz']) / neutral_calc * 1e6
             comp_neutral = f"[M] calc {neutral_calc:.4f}, exp {neutral_match['mz']:.4f} ({neutral_error:.1f} ppm)"
         found_report_parts.append(found_neutral)
@@ -304,6 +341,7 @@ def main():
         if neutral_notes:
             overall_notes.append("For [M]: " + " ".join(neutral_notes))
 
+        # Build full report line: calculated masses and found masses
         full_report_line = "m/z calcd for " + formula_str + " " + ", ".join(calc_report_parts) \
                            + ", found m/z " + ", ".join(found_report_parts)
         print("\n" + full_report_line)
