@@ -304,8 +304,10 @@ def main():
         if neutral_notes:
             overall_notes.append("For [M]: " + " ".join(neutral_notes))
 
-        found_report_line = "found m/z " + ", ".join(found_report_parts)
-        print("\n" + found_report_line)
+        full_report_line = "m/z calcd for " + formula_str + " " + ", ".join(calc_report_parts) \
+                           + ", found m/z " + ", ".join(found_report_parts)
+        print("\n" + full_report_line)
+        print()  # Empty line between found and comparison lines
         comparison_line = "Comparison: " + ", ".join(comparison_parts)
         print(comparison_line)
         if overall_notes:
