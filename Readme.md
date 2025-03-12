@@ -9,7 +9,7 @@ the calculated m/z values with experimental mass spectrometry data.
 
 Features:
 ---------
-- Computes the isotopic distribution using standard NIST isotopic data.
+- Computes the isotopic distribution using standard NIST isotopic data (https://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl).
 - Calculates theoretical m/z values for the intact molecule ([M]) and for a range of protonation 
   states (e.g., [M+H]+, [M+2H]2+, etc.).
 - Reads configuration settings from a config.ini file.
