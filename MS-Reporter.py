@@ -19,14 +19,18 @@ def read_config():
     return formula_str, charge_range_default, decimals
 
 # -----------------------------------------------------------------------------------
-# 2) ISOTOPIC DATA (from NIST)
+# 2) ISOTOPIC DATA (from NIST https://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl)
 # -----------------------------------------------------------------------------------
 isotope_data = {
     'C': [(12.000000, 0.9893), (13.00335483507, 0.0107)],
     'H': [(1.00782503223, 0.999885), (2.01410177812, 0.000115)],
     'N': [(14.00307400443, 0.99636), (15.00010889888, 0.00364)],
     'O': [(15.99491461957, 0.99757), (16.99913175650, 0.00038), (17.99915961286, 0.00205)],
-    'S': [(31.9720711744, 0.9499), (32.9714589098, 0.0075), (33.967867004, 0.0425), (35.96708071, 0.0001)]
+    'S': [(31.9720711744, 0.9499), (32.9714589098, 0.0075), (33.967867004, 0.0425), (35.96708071, 0.0001)],
+    'B': [(10.01293695, 0.199), (11.00930536, 0.801)],
+    'F': [(18.99840316273, 1)],
+    'P': [(30.97376199842, 1)],
+    'K': [(38.9637064864, 0.932581), (39.963998166, 0.000117), (40.9618252579, 0.067302)]
 }
 
 # Proton mass for ionization (in Da)
@@ -284,6 +288,22 @@ def main():
                 comparison_parts.append(f"[M+{ch}H]{ch}+ calc {calc_mz:.4f}, exp {best_match['mz']:.4f} ({error:.1f} ppm)")
             if notes:
                 overall_notes.append(f"For [M+{ch}H]{ch}+: " + " ".join(notes))
+        
+        # Also process the neutral (intact mass) [M]
+        neutral_calc = most_abundant_mass
+        neutral_match, neutral_notes = find_best_match(neutral_calc, exp_peaks, decimals, ppm_accept=100, ppm_warn=20, ppm_search=1000)
+        if neutral_match is None:
+            found_neutral = "N/A"
+            comp_neutral = f"[M] calc {neutral_calc:.4f}, exp N/A"
+        else:
+            found_neutral = f"{neutral_match['mz']:.{decimals}f}"
+            neutral_error = abs(neutral_calc - neutral_match['mz']) / neutral_calc * 1e6
+            comp_neutral = f"[M] calc {neutral_calc:.4f}, exp {neutral_match['mz']:.4f} ({neutral_error:.1f} ppm)"
+        found_report_parts.append(found_neutral)
+        comparison_parts.append(comp_neutral)
+        if neutral_notes:
+            overall_notes.append("For [M]: " + " ".join(neutral_notes))
+
         found_report_line = "found m/z " + ", ".join(found_report_parts)
         print("\n" + found_report_line)
         comparison_line = "Comparison: " + ", ".join(comparison_parts)
