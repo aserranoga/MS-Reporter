@@ -22,12 +22,12 @@ Configuration:
 A file named "config.ini" should be placed in the same folder as the Python script.
 Below is an example of the config.ini file:
 
-------------------------------------------------
+```
 [DEFAULT]
 formula = C675H1098N198O203S6
 preview_charge_range = 5-30
 decimals = 4
-------------------------------------------------
+```
 
 - "formula"      : The molecular formula (e.g., C675H1098N198O203S6).
 - "preview_charge_range": The default range of protonation states to preview, in the format start-end (e.g., 5-30).
@@ -65,7 +65,7 @@ Program Workflow:
 
 Example Output:
 ---------------
-Parsed formula from config.ini: C675H1098N198O203S6
+```Parsed formula from config.ini: C675H1098N198O203S6
 Default protonation states range from config.ini: 5-30
 Using 4 decimals for the output.
 
@@ -101,6 +101,7 @@ Comparison: [M+7H]7+ calc 2204.9000, exp 2204.9000 (0.0 ppm), [M+8H]8+ calc 1929
 
 Notes:
  - For [M+9H]9+: For calc m/z 1715.1000, the best match (1715.1000) is off by 25.3 ppm (> 20 ppm).
+```
 
 Troubleshooting:
 ----------------
@@ -108,6 +109,3 @@ Troubleshooting:
 - Lines starting with '#' are ignored.
 - PPM thresholds for matching (default: 100 ppm acceptance, 20 ppm warning, 1000 ppm search) can be adjusted in the source code.
 
-License:
---------
-This program is provided as-is, without any warranty. Use at your own risk.
