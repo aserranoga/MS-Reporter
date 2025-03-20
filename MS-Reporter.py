@@ -184,7 +184,7 @@ def find_best_match(calc_mz, exp_peaks, output_mode, precision, ppm_accept=100, 
         notes.append(f"For calc m/z {format_value(calc_mz, output_mode, precision)}, the best match ({format_value(candidate_by_diff['mz'], output_mode, precision)}) is off by {diff_ppm:.1f} ppm (> {ppm_warn} ppm).")
     candidate_by_intensity, _ = max(candidates, key=lambda x: x[0]["I"])
     if abs(candidate_by_diff["mz"] - candidate_by_intensity["mz"]) > 1e-4:
-        notes.append(f"Note: within 1000 ppm, the peak with highest I% is {candidate_by_intensity['mz']:.4f} (I%={candidate_by_intensity['I']}) which differs from the closest match {format_value(candidate_by_diff['mz'], output_mode, precision)}.")
+        notes.append(f"Note: within 1000 ppm, the peak with highest I% is {format_value(candidate_by_intensity['mz'], output_mode, precision)} (I%={candidate_by_intensity['I']}) which differs from the closest match {format_value(candidate_by_diff['mz'], output_mode, precision)} (I%={candidate_by_diff['I']}).")
     return candidate_by_diff, notes
 
 
