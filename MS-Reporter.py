@@ -334,12 +334,12 @@ def main():
             best_match, notes = find_best_match(calc_mz, exp_peaks, output_mode, precision, ppm_accept=100, ppm_warn=20, ppm_search=1000)
             if best_match is None:
                 found_report_parts.append("N/A")
-                comparison_parts.append(f"[M+{ch}H]{ch}+ calc {calc_mz:.4f}, exp N/A")
+                comparison_parts.append(f"[M+{ch}H]{ch}+ N/A")
             else:
                 found_report_parts.append(format_value(best_match['mz'], output_mode, precision))
                 error = abs(calc_mz - best_match['mz']) / calc_mz * 1e6
-                # Force 4 decimals in the comparison output regardless of config value.
-                comparison_parts.append(f"[M+{ch}H]{ch}+ calc {calc_mz:.4f}, exp {best_match['mz']:.4f} ({error:.1f} ppm)")
+                # Only report error in ppm.
+                comparison_parts.append(f"[M+{ch}H]{ch}+ {error:.1f} ppm")
             if notes:
                 overall_notes.append(f"For [M+{ch}H]{ch}+: " + " ".join(notes))
         
@@ -348,11 +348,11 @@ def main():
         neutral_match, neutral_notes = find_best_match(neutral_calc, exp_peaks, output_mode, precision, ppm_accept=100, ppm_warn=20, ppm_search=1000)
         if neutral_match is None:
             found_neutral = "N/A"
-            comp_neutral = f"[M] calc {neutral_calc:.4f}, exp N/A"
+            comp_neutral = f"[M] N/A"
         else:
             found_neutral = format_value(neutral_match['mz'], output_mode, precision)
             neutral_error = abs(neutral_calc - neutral_match['mz']) / neutral_calc * 1e6
-            comp_neutral = f"[M] calc {neutral_calc:.4f}, exp {neutral_match['mz']:.4f} ({neutral_error:.1f} ppm)"
+            comp_neutral = f"[M] {neutral_error:.1f} ppm"
         found_report_parts.append(found_neutral)
         comparison_parts.append(comp_neutral)
         if neutral_notes:
