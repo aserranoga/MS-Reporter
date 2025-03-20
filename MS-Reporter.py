@@ -375,6 +375,12 @@ def main():
     # Ask if user wants to print the same output in Markdown format.
     md_choice = input("\nDo you want to also print the output in Markdown format? (y/n): ").strip().lower()
     if md_choice and md_choice.startswith("y"):
+        if 'found_report_parts' not in locals():
+            found_report_parts = []
+        if 'comparison_parts' not in locals():
+            comparison_parts = []
+        if 'overall_notes' not in locals():
+            overall_notes = []
         # Build Markdown formatted molecular formula.
         md_formula_str = md_format_formula(formula_str)
         # Build Markdown formatted calculated report parts.
@@ -383,10 +389,37 @@ def main():
             md_calc_report_parts.append(md_format_protonation(ch, calc_states[ch], output_mode, precision))
         md_calc_report_parts.append("[M] " + format_value(most_abundant_mass, output_mode, precision))
         # Build full Markdown report line: include a comma before "found m/z" on the same line.
-        md_report_line = "*m/z* **calcd** for " + md_formula_str + " " + ", ".join(md_calc_report_parts) \
-                         + ", **found** m/z " + ", ".join(found_report_parts)
+        md_report_line = "*m/z* **calcd** for " + md_formula_str + " " + ", ".join(md_calc_report_parts)
+        if found_report_parts:
+            md_report_line += ", **found** m/z " + ", ".join(found_report_parts)
         print("\nMarkdown Report:")
         print(md_report_line)
+        # Build Markdown formatted Comparison line by converting the ascii comparison_parts.
+        if comparison_parts:
+            md_comparison_parts = []
+            for part in comparison_parts:
+                md_part = part
+                for ch in charge_list:
+                    ascii_charge_str = f"[M+{ch}H]{ch}+"
+                    md_charge_str = f"[M+{ch}H]<sup>{ch}+</sup>"
+                    md_part = md_part.replace(ascii_charge_str, md_charge_str)
+                md_comparison_parts.append(md_part)
+            md_comparison_line = "**Comparison:** " + ", ".join(md_comparison_parts)
+            print()
+            print(md_comparison_line)
+        # Build Markdown formatted Notes similarly.
+        if overall_notes:
+            md_overall_notes = []
+            for note in overall_notes:
+                md_note = note
+                for ch in charge_list:
+                    ascii_charge_str = f"[M+{ch}H]{ch}+"
+                    md_charge_str = f"[M+{ch}H]<sup>{ch}+</sup>"
+                    md_note = md_note.replace(ascii_charge_str, md_charge_str)
+                md_overall_notes.append(md_note)
+            print("\n**Notes:**")
+            for note in md_overall_notes:
+                print(" - " + note)
     else:
         print("\nMarkdown output not requested.")
 
